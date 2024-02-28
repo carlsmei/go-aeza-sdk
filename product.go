@@ -37,12 +37,6 @@ type Product struct {
 	ServiceHandler string           `json:"serviceHandler"`
 }
 
-type Parameters struct {
-	ISOUrl string `json:"isoUrl"`
-	OSID   int    `json:"os"`
-	Recipe *int   `json:"recipe,omitempty"`
-}
-
 type BuyProductDTO struct {
 	AutoProlong bool       `json:"autoProlong"`
 	Backups     bool       `json:"backups"`

@@ -5,21 +5,36 @@ import (
 	"fmt"
 )
 
+type Parameters struct {
+	ISOUrl            string  `json:"isoUrl"`
+	OSID              int     `json:"os"`
+	Recipe            *int    `json:"recipe,omitempty"`
+	PanelUsername     *string `json:"panelUsername,omitempty"`
+	DDoSNotifications *bool   `json:"ddosNotifications,omitempty"`
+}
+
+type SecureParameters struct {
+	UnSecure bool              `json:"unsecure"`
+	Data     map[string]string `json:"data"`
+}
+
 type Service struct {
-	ID            int              `json:"id"`
-	OwnerID       int              `json:"ownerId"`
-	ProductID     int              `json:"productId"`
-	Name          string           `json:"name"`
-	IP            string           `json:"ip"`
-	PaymentTerm   string           `json:"paymentTerm"`
-	AutoProlong   bool             `json:"autoProlong"`
-	Backups       bool             `json:"backups"`
-	Status        string           `json:"status"`
-	LastStatus    string           `json:"lastStatus"`
-	Product       Product          `json:"product"`
-	LocationCode  string           `json:"locationCode"`
-	Prices        map[string]Price `json:"prices"`
-	CurrentStatus string           `json:"currentStatus"`
+	ID               int              `json:"id"`
+	OwnerID          int              `json:"ownerId"`
+	ProductID        int              `json:"productId"`
+	Name             string           `json:"name"`
+	IP               string           `json:"ip"`
+	PaymentTerm      string           `json:"paymentTerm"`
+	Parameters       Parameters       `json:"parameters"`
+	SecureParameters SecureParameters `json:"secureParameters"`
+	AutoProlong      bool             `json:"autoProlong"`
+	Backups          bool             `json:"backups"`
+	Status           string           `json:"status"`
+	LastStatus       string           `json:"lastStatus"`
+	Product          Product          `json:"product"`
+	LocationCode     string           `json:"locationCode"`
+	Prices           map[string]Price `json:"prices"`
+	CurrentStatus    string           `json:"currentStatus"`
 }
 
 func (client *Client) GetServices() []Service {
