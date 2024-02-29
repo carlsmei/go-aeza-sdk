@@ -1,6 +1,6 @@
 package aeza_sdk
 
-const Version = "0.0.1"
+const Version = "1.0.0"
 
 func New(apiKey string) *Client {
 	return createClient(apiKey)

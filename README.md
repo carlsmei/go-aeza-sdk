@@ -6,7 +6,7 @@
 
 ```bash
 # Go Modules
-require github.com/carlsmei/go-aeza-sdk v0.0.1
+require github.com/carlsmei/go-aeza-sdk v1.0.0
 ```
 
 OR

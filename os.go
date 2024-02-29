@@ -1,6 +1,9 @@
 package aeza_sdk
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type OS struct {
 	ID         int    `json:"id"`
@@ -10,36 +13,37 @@ type OS struct {
 	Enabled    bool   `json:"enabled"`
 }
 
-func (client *Client) GetOSList() []OS {
+func (client *Client) GetOSList() ([]OS, error) {
 	var res Response
 
-	client.restyClient.R().SetResult(&res).Get("os")
+	if _, err := client.restyClient.R().SetResult(&res).Get("os"); err != nil {
+		return nil, err
+	}
+
+	if res.Error.Slug != "" {
+		return nil, errors.New(res.Error.Message)
+	}
 
 	var items []OS
 
 	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return items
+	return items, nil
 }
 
-func (client *Client) GetOS(id int) *OS {
-	var res Response
-
-	client.restyClient.R().SetResult(&res).Get("os")
-
-	var items []OS
-
-	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+func (client *Client) GetOS(id int) (*OS, error) {
+	osList, err := client.GetOSList()
+	if err != nil {
+		return nil, err
 	}
 
-	for _, v := range items {
+	for _, v := range osList {
 		if v.ID == id {
-			return &v
+			return &v, nil
 		}
 	}
 
-	panic("not found")
+	return nil, errors.New("OS Not Found")
 }

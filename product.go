@@ -2,6 +2,7 @@ package aeza_sdk
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -61,47 +62,59 @@ type Transaction struct {
 	OrderInfo   json.RawMessage `json:"orderInfo"`
 }
 
-func (client *Client) GetProducts() []Product {
+func (client *Client) GetProducts() ([]Product, error) {
 	var res Response
 
-	client.restyClient.R().SetResult(&res).Get("services/products")
-
-	var items []Product
-
-	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+	if _, err := client.restyClient.R().SetResult(&res).Get("services/products"); err != nil {
+		return nil, err
 	}
 
-	return items
-}
-
-func (client *Client) GetProduct(id int) Product {
-	var res Response
-
-	client.restyClient.R().SetResult(&res).Get(fmt.Sprintf("services/products/%d", id))
+	if res.Error.Slug != "" {
+		return nil, errors.New(res.Error.Message)
+	}
 
 	var items []Product
 
 	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (client *Client) GetProduct(id int) (*Product, error) {
+	var res Response
+
+	if _, err := client.restyClient.R().SetResult(&res).Get(fmt.Sprintf("services/products/%d", id)); err != nil {
+		return nil, err
+	}
+
+	if res.Error.Slug != "" {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	var items []Product
+
+	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
+		return nil, err
 	}
 
 	if len(items) == 0 {
-		panic("bruh, no product found")
+		return nil, errors.New("no product found")
 	}
 
-	return items[0]
+	return &items[0], nil
 }
 
-func (client *Client) BuyProduct(name string, autoProlong bool, osId int, productId int, term string) (*Service, *Transaction) {
-	product := client.GetProduct(productId)
+func (client *Client) BuyProduct(name string, autoProlong bool, osId int, productId int, term string) (*Service, *Transaction, error) {
+	product, _ := client.GetProduct(productId)
 
 	if product.Type != "hicpu" && product.Type != "vps" {
-		panic("not implemented")
+		return nil, nil, errors.New("not implemented (hicpu or vps only)")
 	}
 
 	var res Response
-	client.restyClient.R().
+	if _, err := client.restyClient.R().
 		SetResult(&res).
 		SetHeader("Content-Type", "application/json").
 		SetBody(BuyProductDTO{
@@ -117,17 +130,23 @@ func (client *Client) BuyProduct(name string, autoProlong bool, osId int, produc
 			ProductID: productId,
 			Term:      term,
 		}).
-		Post("services/orders")
+		Post("services/orders"); err != nil {
+		return nil, nil, err
+	}
+
+	if res.Error.Slug != "" {
+		return nil, nil, errors.New(res.Error.Message)
+	}
 
 	var items []Service
 	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	service := items[0]
 	transaction := res.Data.Transaction
 
-	return &service, transaction
+	return &service, transaction, nil
 }
 
 // func (product *Product) Buy() {

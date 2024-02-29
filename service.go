@@ -2,6 +2,7 @@ package aeza_sdk
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -37,34 +38,42 @@ type Service struct {
 	CurrentStatus    string           `json:"currentStatus"`
 }
 
-func (client *Client) GetServices() []Service {
+func (client *Client) GetServices() ([]Service, error) {
 	var res Response
 
-	client.restyClient.R().SetResult(&res).Get("services")
-
-	var items []Service
-	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+	if _, err := client.restyClient.R().SetResult(&res).Get("services"); err != nil {
+		return nil, err
 	}
-
-	return items
-}
-
-func (client *Client) GetService(id int) Service {
-	var res Response
-
-	client.restyClient.R().SetResult(&res).Get(fmt.Sprintf("services/%d", id))
 
 	if res.Error.Slug != "" {
-		panic("err")
+		return nil, errors.New(res.Error.Message)
 	}
 
 	var items []Service
 	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return items[0]
+	return items, nil
+}
+
+func (client *Client) GetService(id int) (*Service, error) {
+	var res Response
+
+	if _, err := client.restyClient.R().SetResult(&res).Get(fmt.Sprintf("services/%d", id)); err != nil {
+		return nil, err
+	}
+
+	if res.Error.Slug != "" {
+		return nil, errors.New(res.Error.Message)
+	}
+
+	var items []Service
+	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
+		return nil, err
+	}
+
+	return &items[0], nil
 }
 
 type DeleteServiceResponse struct {
@@ -72,16 +81,18 @@ type DeleteServiceResponse struct {
 	Error *Error `json:"error,omitempty"`
 }
 
-func (client *Client) DeleteService(id int) bool {
+func (client *Client) DeleteService(id int) (bool, error) {
 	var res DeleteServiceResponse
 
-	client.restyClient.R().SetResult(&res).Delete(fmt.Sprintf("services/%d", id))
-
-	if res.Error.Slug != "" {
-		panic("err")
+	if _, err := client.restyClient.R().SetResult(&res).Delete(fmt.Sprintf("services/%d", id)); err != nil {
+		return false, err
 	}
 
-	return res.Data == "ok"
+	if res.Error.Slug != "" {
+		return false, errors.New(res.Error.Message)
+	}
+
+	return res.Data == "ok", nil
 }
 
 // func (client *Client) ChangeService(id int) Service {
@@ -105,26 +116,29 @@ type ChangeServicePasswordDTO struct {
 	Password string `json:"password"`
 }
 
-func (client *Client) ChangeServicePassword(id int, password string) Service {
+func (client *Client) ChangeServicePassword(id int, password string) (*Service, error) {
 	var res Response
 
-	client.restyClient.R().
+	if _, err := client.restyClient.R().
 		SetResult(&res).
 		SetBody(&ChangeServicePasswordDTO{
 			Password: password,
 		}).
-		Post(fmt.Sprintf("services/%d/changePassword", id))
+		Post(fmt.Sprintf("services/%d/changePassword", id)); err != nil {
+
+		return nil, err
+	}
 
 	if res.Error.Slug != "" {
-		panic("err")
+		return nil, errors.New(res.Error.Message)
 	}
 
 	var items []Service
 	if err := json.Unmarshal(res.Data.Items, &items); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return items[0]
+	return &items[0], nil
 }
 
 // https://my.aeza.net/api/services/%d/tasks
